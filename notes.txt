@@ -1,0 +1,304 @@
+                                                 Redis
+
+
+Redis stands for REmote DIctionary Server.
+
+Remote : Distributed
+Dictionary : Hastable/Map/HashMap
+
+Data structure which stores data and which is distributed.
+
+Redis is written in c language. Redis is written on unix platforms- linux,osx.
+
+
+Redis distribution
+
+Mode of Distribution:
+
+1.Open source - Redis.io
+2.Commerical  - Redis cloud - redislabs
+
+Redis Platform:
+..............
+Redis is officially available on unix,linux,bsd versions only.
+redis is not available on windows.
+
+Redis is available on windows 
+-via docker.
+-via third party - it is not stable.
+
+Ridis use cases:
+...............
+
+1.caching.
+2.Session management
+3.Message broker
+4.Gaming
+5.as database.
+
+
+Redis installation:
+..................
+->source code : build from source
+->binary
+//////////////////////////////////////////////////////////////////////////////////////////
+
+How to install redis?
+
+-open source - on linux
+
+ - build from source.
+
+-open source - on windows
+  -docker - for development only.
+
+Steps:
+1.sudo apt-get update
+2.wget https://download.redis.io/releases/redis-6.2.1.tar.gz
+3.tar xzf redis-6.2.1.tar.gz
+4.install compilers
+5.build using make.
+
+redis distribution dir structure:
+
+1.redis-6.0.9/src
+ -all source code - .c and .h files
+
+2.redis-6.0.9/deps
+ contains all compiler related things- cc, gcc.
+ in order compile the files we need compilers
+ memory allocators
+3.redis-6.0.9/tests
+   To test stability of redis components.
+
+4.redis-6.0.9/utils
+   contains ulities for administration,dev,testing redis.
+
+Files:
+
+bug reports:https://github.com/redis/redis/issues
+
+redis configuration file:
+redis.conf
+  Redis server uses this file for starting and applying all redis admin features  
+ 
+
+Lab 1: How to run redis server?
+
+redis server can be started in two mode in general
+
+1.log mode
+
+$ src/redis-server
+
+27874:C 15 Mar 2021 11:20:14.207 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+27874:C 15 Mar 2021 11:20:14.207 # Redis version=6.2.1, bits=64, commit=00000000, modified=0, pid=27874, just started
+27874:C 15 Mar 2021 11:20:14.207 # Warning: no config file specified, using the default config. In order to specify a config file use src/redis-server /path/to/redis.conf
+27874:M 15 Mar 2021 11:20:14.208 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+27874:M 15 Mar 2021 11:20:14.208 * monotonic clock: POSIX clock_gettime
+                _._
+           _.-``__ ''-._
+      _.-``    `.  `_.  ''-._           Redis 6.2.1 (00000000/0) 64 bit
+  .-`` .-```.  ```\/    _.,_ ''-._
+ (    '      ,       .-`  | `,    )     Running in standalone mode
+ |`-._`-...-` __...-.``-._|'` _.-'|     Port: 6379
+ |    `-._   `._    /     _.-'    |     PID: 27874
+  `-._    `-._  `-./  _.-'    _.-'
+ |`-._`-._    `-.__.-'    _.-'_.-'|
+ |    `-._`-._        _.-'_.-'    |           http://redis.io
+  `-._    `-._`-.__.-'_.-'    _.-'
+ |`-._`-._    `-.__.-'    _.-'_.-'|
+ |    `-._`-._        _.-'_.-'    |
+  `-._    `-._`-.__.-'_.-'    _.-'
+      `-._    `-.__.-'    _.-'
+          `-._        _.-'
+              `-.__.-'
+
+27874:M 15 Mar 2021 11:20:14.208 # Server initialized
+27874:M 15 Mar 2021 11:20:14.208 # WARNING overcommit_memory is set to 0! Background save may fail under low memory condition. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+27874:M 15 Mar 2021 11:20:14.209 * Loading RDB produced by version 6.2.1
+27874:M 15 Mar 2021 11:20:14.209 * RDB age 50 seconds
+27874:M 15 Mar 2021 11:20:14.209 * RDB memory usage when created 0.83 Mb
+27874:M 15 Mar 2021 11:20:14.209 * DB loaded from disk: 0.000 seconds
+27874:M 15 Mar 2021 11:20:14.209 * Ready to accept connections
+
+
+2.detached mode - back ground process.
+
+Since redis is a c program, which has main method.
+
+int main(char* args){
+  chars *myargs=args;
+}
+args are used to pass command line args- options; value we pass to process during runtime.
+
+syntax :
+
+src/redis-server  --options
+
+eg:
+$src/redis-server --daemonize yes
+
+
+
+Lab 2 : how to connect redis server?
+
+ you need to communicate redis server, we need redis clients.
+
+Redis can be connected with most of the programming languages
+     -java, javascript,python,c#,Ruby,C,C++..........
+
+Every programming has dirivers to connect redis server.
+
+Redis offers built in cli tool - redis-cli
+ command line tool to talk to redis server.
+this tool mostly used by administors
+
+Lab 3: How to connect redis via redis cli?
+
+Hand shaking processing:
+
+$src/redis-cli
+127.0.0.1:6379> PING
+PONG
+127.0.0.1:6379> PING "Hello Redis!"
+"Hello Redis!"
+127.0.0.1:6379>
+
+Lab 4 : How to stop running redis server?
+
+>127.0.0.1:6379> shutdown
+not connected>
+
+after shutting down, if you try to connect server you will get the following error.
+
+Could not connect to Redis at 127.0.0.1:6379: Connection refused.
+
+Lab 5: How to change default port?
+
+--port parameter
+
+$src/redis-server --port 6380
+
+How to connect via cli if port is different
+
+ src/redis-cli
+Could not connect to Redis at 127.0.0.1:6379: Connection refused
+
+by default redis-cli has been configured to connect with 6379 port only. if port change
+we need to tell explicit port.
+
+Like redis server redis-cli takes parameter, parameter should be passed with "-" 
+ -p
+
+$src/redis-cli -p 6380
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+Lab 6: How to start multiple redis instances?
+
+redis can be started n-no of instances.
+
+Redis server can be classified into 2 category based on server startup?
+
+1.standalone mode
+
+2.Replica mode
+  2.1.cluster mode
+
+Multiple redis instances in standalone mode?
+ just run servers in different ports.
+ 
+src/redis-server --daemonize yes
+src/redis-server --daemonize yes --port 6380
+src/redis-server --daemonize yes --port 6381
+
+src/redis-cli 
+
+src/redis-cli -p 6380
+src/redis-cli -p 6381
+//////////////////////&&&&&&&&&&&&&&&&&/////////////////////////////////////////////////////
+
+Task : How to inspect redis.conf file.
+
+1.Redis is able to start without a configuration file using a "built-in default configuration".
+2.However this setup is only recommended for testing and development purposes.
+3.redis conf file has values defined by "directives".
+  directive is just variable having value.
+ 
+   keyword arg1 arg2 argN
+   (directive)
+
+   daemonize no
+
+3.# - symbol is used to disable configuration or to represent documentation
+
+   # Genernal 
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
+Redis General Concepts:
+
+
+1.Redis is key-value pair data store.
+
+ Data storage in redis is based keys.
+ A key can be maped with single or compsit values.
+
+2.Redis provides data structures such as strings, hashes, lists, sets, sorted sets with range queries, bitmaps, hyperloglogs, geospatial indexes, and streams.
+
+3.commands ;
+  like sql commands(select,insert,update,grant,commit) , redis offers commands.
+  commands are apis supplied to redis-server will run command and will give response.
+
+ generally commands are classified into 2.
+
+  - request related (write) - Set
+  - response related (read) - get
+
+
+Lab 7: How to store data based on data types.
+
+1.Strings:
+127.0.0.1:6379> SET  message "Hello"
+OK
+127.0.0.1:6379>
+127.0.0.1:6379> GET message
+"Hello"
+127.0.0.1:6379> GET msg
+(nil)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
