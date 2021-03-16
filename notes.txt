@@ -148,7 +148,7 @@ Lab 2 : how to connect redis server?
 Redis can be connected with most of the programming languages
      -java, javascript,python,c#,Ruby,C,C++..........
 
-Every programming has dirivers to connect redis server.
+Every programming lang has dirivers to connect redis server.
 
 Redis offers built in cli tool - redis-cli
  command line tool to talk to redis server.
@@ -257,36 +257,1223 @@ Redis General Concepts:
   - response related (read) - get
 
 
-Lab 7: How to store data based on data types.
+Lab 7: How to save simple data into redis server?
+Command:
 
-1.Strings:
-127.0.0.1:6379> SET  message "Hello"
+SET 
+GET
+
+SET key value [EX seconds|PX milliseconds|KEEPTTL] [NX|XX] [GET]
+
+127.0.0.1:6379> SET message "Hello Redis!!"
 OK
-127.0.0.1:6379>
+
+Here We send key via set command to server, server will execute that command, stores data with
+key-value, once success it returns RESPONSE - OK.
+
+GET key
+
 127.0.0.1:6379> GET message
-"Hello"
-127.0.0.1:6379> GET msg
+"Hello Redis!!"
+/////////////////////////////////////////////////////////////////////////////////////////////
+Commands: Keys:
+..............
+
+How to read all keys or some of the keys?
+
+ KEYS
+ SCAN
+
+Returns all keys matching pattern.
+
+127.0.0.1:6379> KEYS *
+1) "message"
+
+127.0.0.1:6379> KEYS m?ssage
+1) "message"
+
+Redis uses glob-style pattern similar to regex pattern.
+https://en.wikipedia.org/wiki/Glob_(programming) - *,?,?? []
+
+
+Keys
+-Blocks until complete
+   lets say database contains million keys, it blocks database long time
+ Recommendation : dont use in production, use it in dev and testing env only.
+
+Redis Process Architecture:
+...........................
+
+1.Redis is single threaded.
+  
+Non blocking and async arch.
+   Redis since single threaded all heavy or long running process are handed over to kernal 
+space like epoll or Kqueue.
+
+Redis server is async non blocking server.
+ Redis can schedule long running tasks in the background, without affecting the running
+ redis server
+
+
+
+Scan :
+  iterates over cursor
+  it also blocks but only iterates over handful  of keys at  the time.
+  Returns slot references
+  May return 0 or more keys per call.
+  Safe for production.
+
+
+127.0.0.1:6379> scan 0 MATCH *
+1) "15"
+2)  1) "a"
+    2) "c1"
+    3) "c"
+    4) "d"
+    5) "d1"
+    6) "b"
+    7) "message"
+    8) "e"
+    9) "a1"
+   10) "e1"
+127.0.0.1:6379> scan 15 MATCH *
+1) "15"
+2)  1) "a"
+    2) "c1"
+    3) "c"
+    4) "d"
+    5) "d1"
+    6) "b"
+    7) "message"
+    8) "e"
+    9) "a1"
+   10) "e1"
+127.0.0.1:6379> scan 0 MATCH * COUNT 4
+1) "14"
+2) 1) "a"
+   2) "c1"
+   3) "c"
+   4) "d"
+127.0.0.1:6379> scan 14 MATCH * COUNT 4
+1) "9"
+2) 1) "d1"
+   2) "b"
+   3) "message"
+   4) "e"
+127.0.0.1:6379> scan 9 MATCH * COUNT 4
+1) "0"
+2) 1) "a1"
+   2) "e1"
+   3) "b1"
+127.0.0.1:6379> scan 0 MATCH * COUNT 4
+1) "14"
+2) 1) "a"
+   2) "c1"
+   3) "c"
+   4) "d"
+127.0.0.1:6379>
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+Redis Key Modeling Patterns: Redis community Recommendation:
+............................................................
+
+KEY NAME:
+
+Plain keynames
+   A    10
+   X    20
+   name "subramanian"
+
+Redis coding standard:
+  objectname:identifier:subidentifier
+
+i want to store order status
+
+  order:1  available
+  order:2  outofstock
+  order:3  pending
+  user:1:status online
+
+127.0.0.1:6379> SET order:1 "available"
+OK
+127.0.0.1:6379> SET order:1 "available"
+OK
+127.0.0.1:6379> get order:2 "outofstock"
+OK
+127.0.0.1:6379> set user:1:status online
+OK
+127.0.0.1:6379> set user:2:status online
+OK
+127.0.0.1:6379> set user:3:status offline
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+KEYS REMOVAL: DEL and Unlink
+/////////////////////////////
+
+
+KEYS REMOVAL: DEL and Unlink
+/////////////////////////////
+
+
+DEL key [key ...]
+
+Removes the specified keys. A key is ignored if it does not exist.
+
+Return value
+Integer reply: The number of keys that were removed.
+
+-The DEL Command will remove the key and memory associated with the key.
+-This is performed as a blocking opertion.
+
+UnLink:
+......
+-With UNLINK, key is unlinked , hence the name of the  command and will no longer exists.
+-The memory associated with the key value is reclaimed by an asynchronous process,so the UNLINK is a  non-blocking command.
+
+
+127.0.0.1:6379> DEL a
+(integer) 1
+127.0.0.1:6379> DEL a a1
+(integer) 1
+127.0.0.1:6379> DEL b b1
+(integer) 2
+127.0.0.1:6379> UNLINK  c c1
+(integer) 2
+127.0.0.1:6379> get c
+(nil)
+127.0.0.1:6379> get a
+(nil)
+127.0.0.1:6379>
+
+Note:
+ if key does not exit , it returns "nil"
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+However, there are times when you only want to set the value if the key already exists.
+
+EXISTS key [key ...]
+
+EXISTS customer:1000
+127.0.0.1:6379> EXISTS customer:2000
+(integer) 1
+127.0.0.1:6379> EXISTS customer:9000
+(integer) 0
+127.0.0.1:6379>
+
+it returns 1 for key present , 0 means no key present
+
+
+
+Use case :
+
+Why should i use exits command to verify the existing of key.
+
+Operations:
+ - new Key - insert
+ - update key  -  update.
+
+-SET Command
+127.0.0.1:6379> SET customer:9000 jane
+OK
+127.0.0.1:6379> GET customer:9000
+"jane"
+
+what if i want to update customer name of customer:9000
+SET Command
+
+127.0.0.1:6379> SET customer:9000 "jane james"
+OK
+127.0.0.1:6379> GET customer:9000
+"jane james"
+127.0.0.1:6379>
+
+
+127.0.0.1:6379> EXISTS customer:9000
+(integer) 0
+127.0.0.1:6379> SET customer:9000 jane
+OK
+
+You could first check with the exist command to see if the key is present before using SET.
+
+But having two operations-- the exists followed by a set--means two round trips Redis and possible inconsistencies between the operations.
+
+
+127.0.0.1:6379> EXISTS customer:9000
+(integer) 0
+127.0.0.1:6379> SET customer:9000 jane
+OK
+
+You could first check with the exist command to see if the key is present before using SET.
+
+But having two operations-- the exists followed by a set--means two round trips Redis and possible inconsistencies between the operations.
+
+NX -  for create
+XX -  for update.
+
+127.0.0.1:6379> SET customer:333 john NX
+OK
+127.0.0.1:6379> SET customer:333 john NX
+(nil)
+127.0.0.1:6379> SET customer:444 Karthik XX
+(nil)
+127.0.0.1:6379> SET customer:444 Karthik NX
+OK
+127.0.0.1:6379> SET customer:444 Karthik.K XX
+OK
+127.0.0.1:6379> GET customer:444
+"Karthik.K"
+127.0.0.1:6379>
+/////////////////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+Key removals:
+
+1.you can remove key through commands - del,unlink. 
+  This is not good idea , incase large amount of keys... -
+
+2. auto delete ;
+   it is good idea , when key is not usefull after some process/time.
+
+Timers : Automatic Key Eviction:
+.................................
+timeout in sec- ex
+timeout in msc -px
+TTL key - to verify , how much time is there 
+expire key sec - used to set timeout after key creation
+
+Timers : Automatic Key Eviction:
+.................................
+timeout in sec- ex
+timeout in msc -px
+TTL key - to verify , how much time is there 
+	
+27.0.0.1:6379> SET seat-hold Row:A:Seat:4 EX 5000
+OK
+127.0.0.1:6379> get seat-hold
+"Row:A:Seat:4"
+127.0.0.1:6379> get seat-hold
+"Row:A:Seat:4"
+127.0.0.1:6379> get seat-hold
+"Row:A:Seat:4"
+127.0.0.1:6379> TTL seat-hold
+(integer) 4957
+127.0.0.1:6379> TTL seat-hold
+(integer) 4952
+127.0.0.1:6379> SET user:password something PX 10000
+OK
+127.0.0.1:6379> TTL user:password
+(integer) -2
+127.0.0.1:6379> get user:password
+(nil)
+127.0.0.1:6379> exists user:password
+(integer) 0
+127.0.0.1:6379> SET user:password something PX 10000
+OK
+127.0.0.1:6379> exists user:password
+(integer) 1
+127.0.0.1:6379> get user:password
+"something"
+127.0.0.1:6379> get user:password
+(nil)
+127.0.0.1:6379>
+
+
+127.0.0.1:6379> expire customer:444 10
+(integer) 1
+127.0.0.1:6379> get customer:444
+"Karthik.K"
+127.0.0.1:6379> get customer:444
+"Karthik.K"
+127.0.0.1:6379> get customer:444
 (nil)
 
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+ //////////////////////////////////////////////////////////////////////////////////////////////
+
+                                             Data types
+1.String:
+ -store alphabets
+ -store numbers
+ -store binary.
+    -image,spreadsheets,html fragments
+
+no int,float datatype.
+
+There is a limit of 512 megabytes for any string value
+
+JPEGs, Excel spreadsheets, HTML fragments, as well as
+plain old regular text and numbers are permissible.
+
+Internally, Redis stores encoding of the value, stores a knowledge of whether it is a text, number, or binary.
+ 1 - integer
+ "a" - string
+ binary - bytes-raw
+
+How to know the type of key?
+
+TYPE key
 
 
+127.0.0.1:6379> SET  a 10
+OK
+127.0.0.1:6379> SET name "Subramanian"
+OK
+127.0.0.1:6379> SET b "10"
+OK
+127.0.0.1:6379> TYPE a
+string
+127.0.0.1:6379> TYPE name
+string
+127.0.0.1:6379> TYPE b
+string
+127.0.0.1:6379> SET c 10.5
+OK
+127.0.0.1:6379> TYPE c
+string
+
+Since string is Super Type, 10 also stored as string but it is numeric value.
+
+Can i do some computation on numerical value.
+Yes!
+
+in order to know the internal type of string
+
+OBJECT subcommand key
+
+The OBJECT command allows to inspect the internals of Redis Objects associated with keys
+
+OBJECT ENCODING <key> returns the kind of internal representation used in order to store the value associated with a key.
 
 
+127.0.0.1:6379> SET  a 10
+OK
+127.0.0.1:6379> SET name "Subramanian"
+OK
+127.0.0.1:6379> SET b "10"
+OK
+127.0.0.1:6379> TYPE a
+string
+127.0.0.1:6379> TYPE name
+string
+127.0.0.1:6379> TYPE b
+string
+127.0.0.1:6379> SET c 10.5
+OK
+127.0.0.1:6379> TYPE c
+string
+127.0.0.1:6379> INCR a
+(integer) 11
+127.0.0.1:6379> INCR b
+(integer) 11
+127.0.0.1:6379> OBJECT ENCODING a
+"int"
+127.0.0.1:6379> OBJECT ENCODING b
+"int"
+127.0.0.1:6379> OBJECT ENCODING name
+"embstr"
+127.0.0.1:6379> OBJECT ENCODING c
+"embstr"
+127.0.0.1:6379> INCR name
+(error) ERR value is not an integer or out of range
+127.0.0.1:6379> INCR c
+(error) ERR value is not an integer or out of range
+127.0.0.1:6379> INCRBYFLOAT c
+(error) ERR wrong number of arguments for 'incrbyfloat' command
+127.0.0.1:6379> INCRBYFLOAT c 1
+"11.5"
+127.0.0.1:6379> INCRBYFLOAT c 1
+"12.5"
+127.0.0.1:6379> INCRBY a 10
+(integer) 21
+127.0.0.1:6379> INCRBY a 10
+(integer) 31
+127.0.0.1:6379> INCRBY a 10
+(integer) 41
+127.0.0.1:6379> INCRBY a -10
+(integer) 31
+127.0.0.1:6379> INCRBY a 10
+(integer) 41
+127.0.0.1:6379> INCRBY a -10
+(integer) 31
+127.0.0.1:6379> DECR a
+(integer) 30
+127.0.0.1:6379> DECRby a 5
+(integer) 25
+127.0.0.1:6379> DECRby a 5
+(integer) 20
+127.0.0.1:6379>
+////////////////////////////////////////////////////////////////////////////////////////////
+String operations:
+
+-string length
+-stringrange
+-append
+
+127.0.0.1:6379> STRLEN name
+(integer) 11
+127.0.0.1:6379> set name "Subramanian"
+OK
+127.0.0.1:6379> GETRANGE name 0 4
+"Subra"
+127.0.0.1:6379>
+
+127.0.0.1:6379> APPEND name "Murugan"
+(integer) 18
+127.0.0.1:6379> get name
+"SubramanianMurugan"
+127.0.0.1:6379>
+////////////////////////////////////////////////////////////////////////////////////////////
+Bit Maps:
+........
+
+Collection of bits which forms a structure called bit map.
+
+BitMaps are  a data type used within Redis and represents a long list of bits that contain 0 by default and we can use SETBIT Command to flip to 1 or 0
 
 
+Key                    Value                               type
+	
+a_bitmap     0 0 0  0 0 0 0 0 0 0 0 0 0 0                  binary string
 
 
+bitmap can store up to 2pow 32 bits,about 4 billion items
+
+Use case: login use case
+
+SETBIT logins:2017:04 6 1
+
+here login:2017:04 is key
+6 is offset , typically userid as offset
+1 is active bit
+
+SETBIT logins:2017:04 6 1
+
+27.0.0.1:6379> SET login:today 7 1
+(error) ERR syntax error
+127.0.0.1:6379> SETBIT login:today 7 1
+(integer) 0
+127.0.0.1:6379> SETBIT login:today 7 0
+(integer) 1
+127.0.0.1:6379> GET login:today
+"\x00"
+127.0.0.1:6379> Type login:today
+string
+127.0.0.1:6379> object encoding login:today
+"raw"
+127.0.0.1:6379>
+
+types:
+ int -numbers
+ embstr -embededstring
+ raw - binary- bits
+/////////////////////////////////////////////**************//////////////////////////////////
+/////////////////////////////////////////////**************//////////////////////////////////
+
+Hash:
+.....
+
+String stores single/scalar value only
+
+ SET a 10
+
+Hash Stores key-value pair values into one single key
+
+    player:1
+        name:xxx
+        score:12
+        status:available
+
+H-SET =>HashSet
+
+HSET key field value [field value ...]
+
+127.0.0.1:6379> HSET player:1 name Subramanian score 80 status alive
+(integer) 3
+127.0.0.1:6379> HSET houseId:5150 numBedrooms 3 sqfeet 2700 hvac "forced air"
+(integer) 3
+1
+
+internal represention would be like below
+  
+player:1 
+       {
+         name:'subramanina',
+         score:80,
+         status:'alive'
+       }
 
 
+houseID: 5150
+	numBedrooms: 3
+	squareFeet: 2700
+	hvac: forced air
 
 
+Commands:
+
+HSET - to add field and values
+HGETALL - to read all hash values
+HGET  - TO get a particular key value
+HSET - to update existing field or add new field value
+HDEL - to delete a field value from existing hash
+HINCRBY - to increment a field value
+
+Reading Keys and key
+......................
+127.0.0.1:6379> HGETALL player:1
+1) "name"
+2) "Subramanian"
+3) "score"
+4) "80"
+5) "status"
+6) "alive"
+127.0.0.1:6379> HGET player:1 name
+"Subramanian"
+127.0.0.1:6379> HGET player:1 status
+"alive"
+127.0.0.1:6379>
 
 
+////////////////////////////////////////////////////////////////////////////////////////////
+How to maniupulate a field in hashset?
+
+HINCRBY key field increment
+HINCRBYFLOAT key field increment
+
+127.0.0.1:6379> HINCRBY player:1  score 5
+(integer) 85
+127.0.0.1:6379> HINCRBY player:1  score 5
+........................................................
+
+........................................................
+
+How to update existing fields in hash set?
+
+You can update single field or multiple fields?
+
+127.0.0.1:6379> HSET player:1 name "Ram Kumar"
+(integer) 0
+127.0.0.1:6379> HGET player:1 name
+"Ram Kumar"
+127.0.0.1:6379> HSET player:1 name "Ram Kumar" score 10
+(integer) 0
+127.0.0.1:6379> HGETALL player:1
+1) "name"
+2) "Ram Kumar"
+3) "score"
+4) "10"
+5) "status"
+6) "alive"
+127.0.0.1:6379>
+.......................................................................................
+.......................................................................................
+How to add new field on existing hash?
+
+127.0.0.1:6379> HSET player:1  level 5
+(integer) 1
+127.0.0.1:6379> HGETALL player:1
+1) "name"
+2) "Ram Kumar"
+3) "score"
+4) "10"
+5) "status"
+6) "alive"
+7) "level"
+8) "5"
+127.0.0.1:6379>
+////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
+
+How to delete field/s from hash?
+
+HDEL key field [field ...]
+
+27.0.0.1:6379> HGETALL player:1
+1) "name"
+2) "Ram Kumar"
+3) "score"
+4) "10"
+5) "status"
+6) "alive"
+7) "level"
+8) "5"
+127.0.0.1:6379> HDEL player:1 status
+(integer) 1
+127.0.0.1:6379> HGETALL player:1
+1) "name"
+2) "Ram Kumar"
+3) "score"
+4) "10"
+5) "level"
+6) "5"
+127.0.0.1:6379>
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
+How to verify a particular field present or not on existing hash?
+
+HEXISTS key field
+
+127.0.0.1:6379> HEXISTS player:1 status
+(integer) 0
+127.0.0.1:6379> HEXISTS player:1 level
+(integer) 1
+127.0.0.1:6379>
+...........................................................................................
+
+...........................................................................................
+How to extract only keys and values from Hash?
+
+Keys Only:
+
+127.0.0.1:6379> HKEYS player:1
+1) "name"
+2) "score"
+3) "level"
+
+Values Only:
+127.0.0.1:6379> HVALS player:1
+1) "Ram Kumar"
+2) "10"
+3) "5
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+                                     List
+                                   .........
+
+1.List is ordered collection of strings.
+2.List maintains order based index, which starts 0th index.
+3.Lists are dynamic array,you can add,delete items dynamically, as you add or delete,
+  the size of list automatically expanded or shrinked.
+4.Lists are implemented as "Doubly Linked List" : Linked List
+5.You can add element at any position :  head / tail - left /right.
+6.You can create other usefull data structures like "Queues/ Stacks,PQueues"
+7.Duplicates are allowed.
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+                                     List
+                                   .........
+
+1.List is ordered collection of strings.
+2.List maintains order based index, which starts 0th index.
+3.Lists are dynamic array,you can add,delete items dynamically, as you add or delete,
+  the size of list automatically expanded or shrinked.
+4.Lists are implemented as "Doubly Linked List" : Linked List
+5.You can add element at any position :  head / tail - left /right.
+6.You can create other usefull data structures like "Queues/ Stacks,PQueues"
+7.Duplicates are allowed.
+
+List Operations:
+
+1.Add Elements at Head
+
+LPUSH key element [element ...]
+
+127.0.0.1:6379> LPUSH  names a b c d e
+(integer) 5
+127.0.0.1:6379>
+
+............................................................
+
+2.Get No of elemenents In the List
+
+LLEN key
+
+127.0.0.1:6379> LLEN names
+(integer) 5
+...................................................................
+3.How read elements from left most?
+
+127.0.0.1:6379> LPUSH  names a b c d e
+(integer) 5
+
+LPush adds element left side
+
+Internal storage would be for LPUSH 
+ e,d,c,a,b
+
+127.0.0.1:6379> LRANGE names 0 5
+1) "e"
+2) "d"
+3) "c"
+4) "b"
+5) "a"
+127.0.0.1:6379> LRANGE names 2 5
+1) "c"
+2) "b"
+3) "a"
+127.0.0.1:6379> LRANGE names 3 5
+1) "b"
+2) "a"
+...........................................................................................
+3.1. How to read single element based on index?
+
+LINDEX key index
+
+ - 0 means first index element
+ - -1 last tail element
+ - outofindex - nil
+
+127.0.0.1:6379> LRANGE names 0 7
+1) "c"
+2) "redis-cli"
+3) "b"
+4) "a"
+
+Get the first element:
+
+127.0.0.1:6379> LINDEX names 0
+"c"
+
+127.0.0.1:6379> LINDEX names 1
+"redis-cli"
+127.0.0.1:6379> LINDEX names -1
+"a"
+127.0.0.1:6379> LINDEX names -2
+"b"
+127.0.0.1:6379> LINDEX names 90
+(nil)
+127.0.0.1:6379>
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+How to update/replace old node value into new node value?
+
+Before update:
+127.0.0.1:6379> LRANGE names 0 5
+1) "e"
+2) "d"
+3) "c"
+4) "b"
+5) "a"
+
+After update:
+127.0.0.1:6379> LSET  names 0 "foo"
+OK
+127.0.0.1:6379> LRANGE names 0 5
+1) "foo"
+2) "d"
+3) "c"
+4) "b"
+5) "a"
+////////////////////////////////////////////////////////////////////////////////////////////
+
+How to add element in the middle of the List?
+
+LINSERT key BEFORE|AFTER pivot element
 
 
+127.0.0.1:6379> LRANGE names 0 5
+1) "foo"
+2) "d"
+3) "c"
+4) "b"
+5) "a"
+127.0.0.1:6379> LINSERT names BEFORE "c" "redis"
+(integer) 6
+127.0.0.1:6379> LRANGE names 0 6
+1) "foo"
+2) "d"
+3) "redis"
+4) "c"
+5) "b"
+6) "a"
+127.0.0.1:6379> LINSERT names AFTER "c" "redis-cli"
+(integer) 7
+127.0.0.1:6379> LRANGE names 0 7
+1) "foo"
+2) "d"
+3) "redis"
+4) "c"
+5) "redis-cli"
+6) "b"
+7) "a"
+///////////////////////////////////////////////////////////////////////////////////////////
+How to remove element from the Left side?
+
+LPOP key
+
+Before Remove:
+..............
+
+127.0.0.1:6379> LRANGE names 0 7
+1) "foo"
+2) "d"
+3) "redis"
+4) "c"
+5) "redis-cli"
+6) "b"
+7) "a"
+127.0.0.1:6379> LPOP names
+"foo"
+127.0.0.1:6379> LPOP names
+"d"
+127.0.0.1:6379> LPOP names
+"redis"
+
+After Remove:
+.............
+
+127.0.0.1:6379> LRANGE names 0 7
+1) "c"
+2) "redis-cli"
+3) "b"
+4) "a"
+127.0.0.1:6379>
+////////////////////////////////////////////////////////////////////////////////////////////
+
+RPUSH : Pushing elements towards right
+......................................
+
+RPUSH key element [element ...]
+
+Add elements:
+
+127.0.0.1:6379> RPUSH  counters 1 2 3 4 5 6 7 8 9 10
+(integer) 10
+
+127.0.0.1:6379> LRANGE counters 0 9
+ 1) "1"
+ 2) "2"
+ 3) "3"
+ 4) "4"
+ 5) "5"
+ 6) "6"
+ 7) "7"
+ 8) "8"
+ 9) "9"
+10) "10"
+
+127.0.0.1:6379> LRANGE counters 0 9
+ 1) "1"
+ 2) "2"
+ 3) "3"
+ 4) "4"
+ 5) "5"
+ 6) "6"
+ 7) "7"
+ 8) "8"
+ 9) "9"
+10) "10"
+127.0.0.1:6379> RPOP counters
+"10"
+127.0.0.1:6379> LPOP counters
+"1"
+127.0.0.1:6379>
+/////////////////////////////////////////////////////////////////////////////////////////
+
+Think how to implement stacks and queues using list?
+.....................................................
+
+STACK - LPUSH ,LPOP
+Queue - RPUSH, LPOP
+.........................................................................................
+
+........................................................................................
+
+                                      SET
+............................................................................................ 
+
+Sets:
+ -Unordered collection without duplicate values.
+ -Provides mathmetical set operations - union,intersection,difference.
+
+How to create set / how to add elements set?
+
+SADD key member [member ...]
+
+127.0.0.1:6379> SADD hitcounters 1 1 2 3 3 4 5 6 7 8 8
+(integer) 8
+
+How to get all keys and values?
+
+SSCAN key cursor [MATCH pattern] [COUNT count]
+
+127.0.0.1:6379> SSCAN hitcounters 0 MATCH *
+1) "0"
+2) 1) "1"
+   2) "2"
+   3) "3"
+   4) "4"
+   5) "5"
+   6) "6"
+   7) "7"
+   8) "8"
+127.0.0.1:6379>
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+Cardinality: SCARD
+
+SCARD key
+
+-Returns the set cardinality (number of elements) of the set stored at key.
+
+127.0.0.1:6379> SCARD hitcounters
+(integer) 8
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
+Differences:SDIFF
+
+SDIFF key [key ...]
+
+-Returns the members of the set resulting from the difference between the first set and all the successive sets.
+
+127.0.0.1:6379> SADD key1 a b c d
+(integer) 4
+127.0.0.1:6379> SADD key2 c
+(integer) 1
+127.0.0.1:6379> SADD key3 a c e
+(integer) 3
+127.0.0.1:6379> SDIFF key1 key2 key3
+1) "b"
+2) "d"
+////////////////////////////////////////////////////////////////////////////////////////////
+
+Union : eleminate common elements
+
+127.0.0.1:6379> sadd key1  a b c d e
+(integer) 5
+127.0.0.1:6379> sadd key2 c
+(integer) 1
+127.0.0.1:6379> sadd key3 f g c
+(integer) 3
+127.0.0.1:6379> sunion key1 key2 key3
+1) "f"
+2) "c"
+3) "b"
+4) "a"
+5) "d"
+6) "e"
+7) "g"
+127.0.0.1:6379>
+///////////////////////////////////////////////////////////////////////////////////////////////
+Intersection: Common element
+
+SINTER key [key ...]
+
+Returns the members of the set resulting from the intersection of all the given sets.
+
+127.0.0.1:6379> SADD key1 a b c d
+(integer) 4
+127.0.0.1:6379> SADD key2 c
+(integer) 1
+127.0.0.1:6379> SADD key3 a c e
+
+127.0.0.1:6379> SINTER key1 key2 key3
+1) "c"
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+How to get members of a given set?
+
+SMEMBERS key
 
 
+127.0.0.1:6379> SMEMBERS key1
+1) "c"
+2) "d"
+3) "b"
+4) "a"
+127.0.0.1:6379> SMEMBERS key2
+1) "c"
+127.0.0.1:6379> SMEMBERS key3
+1) "c"
+2) "e"
+3) "a"
+127.0.0.1:6379>
+///////////////////////////////////////////////////////////////////////////////////////////
+
+To test whether an element is member of a given set?
+
+SISMEMBER key member
  
+1-means memeber
+0-means not a member
+
+127.0.0.1:6379> SISMEMBER key1 a
+(integer) 1
+127.0.0.1:6379> SISMEMBER key1 ab
+(integer) 0
+127.0.0.1:6379>
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
+How to remove element from Set?
+
+Remove from first index
+
+SPOP key [count]
+
+127.0.0.1:6379> SMEMBERS key1
+1) "c"
+2) "d"
+3) "b"
+4) "a"
+127.0.0.1:6379> SPOP key1
+"a"
+127.0.0.1:6379> SMEMBERS key1
+1) "c"
+2) "d"
+3) "b"
+127.0.0.1:6379> SPOP key1  2
+1) "c"
+2) "d"
+127.0.0.1:6379> SMEMBERS key1
+1) "b"
+127.0.0.1:6379>
+
+Remove based on element
+
+SREM key member [member ...]
+
+127.0.0.1:6379> SMEMBERS key1
+1) "c"
+2) "d"
+3) "b"
+4) "a"
+5) "e"
+127.0.0.1:6379> SREM key1 c
+(integer) 1
+127.0.0.1:6379> SMEMBERS key1
+1) "d"
+2) "b"
+3) "a"
+4) "e"
+////////////////////////////////////////////////////////////////////////////////////////
+How to select random values from the set?
+
+SRANDMEMBER key [count]
+
+127.0.0.1:6379> SRANDMEMBER key1
+"d"
+127.0.0.1:6379> SRANDMEMBER key1
+"d"
+127.0.0.1:6379> SRANDMEMBER key1
+"b"
+127.0.0.1:6379> SRANDMEMBER key1 2
+1) "e"
+2) "a"
+127.0.0.1:6379> SRANDMEMBER key1 2
+1) "d"
+2) "b"
+127.0.0.1:6379> SRANDMEMBER key1 2
+1) "d"
+2) "b"
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+                                   
+                                      SORTED SET
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+ -Sorted set is similar to set with sorting feature. asc or dec order - based on numbers/charcaters
+
+127.0.0.1:6379> ZADD myset 1 a
+(integer) 1
+127.0.0.1:6379> ZADD myset 1 a
+(integer) 0
+127.0.0.1:63
+79> ZADD myset 1 b
+(integer) 1
+127.0.0.1:6379> ZADD myset 2 c 3 d
+(integer) 2
+127.0.0.1:6379> ZRANGE myset 0 -1 WITHSCORES
+1) "a"
+2) "1"
+3) "b"
+4) "1"
+5) "c"
+6) "2"
+7) "d"
+8) "3"
+127.0.0.1:6379> ZRANGE myset 0 -1
+1) "a"
+2) "b"
+3) "c"
+4) "d"
+127.0.0.1:6379> ZADD myset 0 e
+(integer) 1
+127.0.0.1:6379> ZRANGE myset 0 -1
+1) "e"
+2) "a"
+3) "b"
+4) "c"
+5) "d"
+127.0.0.1:6379> ZADD myset 10 foo
+(integer) 1
+127.0.0.1:6379> ZADD myset 5 bar
+(integer) 1
+127.0.0.1:6379> ZRANGE myset 0 -1
+1) "e"
+2) "a"
+3) "b"
+4) "c"
+5) "d"
+6) "bar"
+7) "foo"
+127.0.0.1:6379> ZADD myset 9 foobar
+(integer) 1
+127.0.0.1:6379> ZRANGE myset 0 -1
+1) "e"
+2) "a"
+3) "b"
+4) "c"
+5) "d"
+6) "bar"
+7) "foobar"
+8) "foo"
+127.0.0.1:6379>
+
+Note: 
+ sorting happens based "score" values, incase scores are same, then redis sorts according to
+ ordered lexicographically of values.
+
+Note: Most of the Sort apis available inside Sorted Set + Some advanced apis also , which is based on scores and ranks.
+/////////////////////////////////////////////////////////////////////////////////////////////
+hyperloglogs, geospatial indexes, and streams -Advanced types
+.............................................................................................
+
+                                      Administration
+.............................................................................................
+
+RDBMS stores data inside schema.
+Does redis stores data inside schema?
+ yes!.....
+
+Memory
+scaling
+high availablity
+security
+etc....
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
