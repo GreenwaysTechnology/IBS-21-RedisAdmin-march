@@ -1453,36 +1453,533 @@ RDBMS stores data inside schema.
 Does redis stores data inside schema?
  yes!.....
 
-Memory
-scaling
-high availablity
-security
-etc....
+Storage:
+
+ Redis is 200% in memory data store -  all data is stored inside RAM.
+ Redis stores data in logical isloation that is called db.
+ Redis has default 16 databases(storage),named as 0,1- default is 0.
+
+Lab 6 :Data base information:
+selectdb 0 
+ switching database to databse
+swapdb 0 1
+  move keys from 0 to 1 
+flushdb 
+  removes all keys in a selected db
+flushall 
+  removes all keys in all database
+removes particular key
+del 
+unlink
+//////////////////////////////////////////////////////////////////////////////////////////
+
+Lab 7: How to start redis server with configuration?
+
+Starting redis server with configuration?
+
+./redis-server /path/to/redis.conf
 
 
+src/redis-server redis.conf
+14271:C 17 Mar 2021 09:35:36.898 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+14271:C 17 Mar 2021 09:35:36.898 # Redis version=6.2.1, bits=64, commit=00000000, modified=0, pid=14271, just started
+14271:C 17 Mar 2021 09:35:36.898 # Configuration loaded
+14271:M 17 Mar 2021 09:35:36.899 * Increased maximum number of open files to 10032 (it was originally set to 1024).
+14271:M 17 Mar 2021 09:35:36.899 * monotonic clock: POSIX clock_gettime
+                _._
+           _.-``__ ''-._
+      _.-``    `.  `_.  ''-._           Redis 6.2.1 (00000000/0) 64 bit
+  .-`` .-```.  ```\/    _.,_ ''-._
+ (    '      ,       .-`  | `,    )     Running in standalone mode
+ |`-._`-...-` __...-.``-._|'` _.-'|     Port: 6381
+ |    `-._   `._    /     _.-'    |     PID: 14271
+  `-._    `-._  `-./  _.-'    _.-'
+ |`-._`-._    `-.__.-'    _.-'_.-'|
+ |    `-._`-._        _.-'_.-'    |           http://redis.io
+  `-._    `-._`-.__.-'_.-'    _.-'
+ |`-._`-._    `-.__.-'    _.-'_.-'|
+ |    `-._`-._        _.-'_.-'    |
+  `-._    `-._`-.__.-'_.-'    _.-'
+      `-._    `-.__.-'    _.-'
+          `-._        _.-'
+              `-.__.-'
+
+14271:M 17 Mar 2021 09:35:36.900 # Server initialized
+14271:M 17 Mar 2021 09:35:36.900 # WARNING overcommit_memory is set to 0! Background save may fail under low memory condition. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+14271:M 17 Mar 2021 09:35:36.901 * Loading RDB produced by version 6.2.1
+14271:M 17 Mar 2021 09:35:36.901 * RDB age 310 seconds
+14271:M 17 Mar 2021 09:35:36.901 * RDB memory usage when created 0.83 Mb
+14271:M 17 Mar 2021 09:35:36.901 * DB loaded from disk: 0.000 seconds
+14271:M 17 Mar 2021 09:35:36.901 * Ready to accept connections
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+Lab 8 : How to inspect the redis server information?
 
 
+Category of server information:
+...............................
+
+server: General information about the Redis server
+clients: Client connections section
+memory: Memory consumption related information
+persistence: RDB and AOF related information
+stats: General statistics
+replication: Master/replica replication information
+cpu: CPU consumption statistics
+commandstats: Redis command statistics
+cluster: Redis Cluster section
+modules: Modules section
+keyspace: Database related statistics
+modules: Module related sections
+errorstats: Redis error statistics
 
 
+127.0.0.1:6379> info
+
+# Server
+redis_version:6.0.4
+redis_git_sha1:00000000
+redis_git_dirty:0
+redis_build_id:d5d470262d47f1a0
+redis_mode:standalone
+os:Linux 5.4.39-linuxkit x86_64
+arch_bits:64
+multiplexing_api:epoll
+atomicvar_api:atomic-builtin
+gcc_version:8.3.0
+process_id:1
+run_id:40543dac7951c11291c95a053a7246e647b36305
+tcp_port:6379
+uptime_in_seconds:47891
+uptime_in_days:0
+hz:10
+configured_hz:10
+lru_clock:13047257
+executable:/data/redis-server
+config_file:
+
+# Clients
+connected_clients:2
+client_recent_max_input_buffer:2
+client_recent_max_output_buffer:0
+blocked_clients:0
+tracking_clients:0
+clients_in_timeout_table:0
+
+# Memory
+used_memory:893520
+used_memory_human:872.58K
+used_memory_rss:7598080
+used_memory_rss_human:7.25M
+used_memory_peak:893520
+used_memory_peak_human:872.58K
+used_memory_peak_perc:100.17%
+used_memory_overhead:837156
+used_memory_startup:802848
+used_memory_dataset:56364
+used_memory_dataset_perc:62.16%
+allocator_allocated:936504
+allocator_active:1224704
+allocator_resident:3592192
+total_system_memory:2084323328
+total_system_memory_human:1.94G
+used_memory_lua:37888
+used_memory_lua_human:37.00K
+used_memory_scripts:0
+used_memory_scripts_human:0B
+number_of_cached_scripts:0
+maxmemory:0
+maxmemory_human:0B
+maxmemory_policy:noeviction
+allocator_frag_ratio:1.31
+allocator_frag_bytes:288200
+allocator_rss_ratio:2.93
+allocator_rss_bytes:2367488
+rss_overhead_ratio:2.12
+rss_overhead_bytes:4005888
+mem_fragmentation_ratio:8.93
+mem_fragmentation_bytes:6747072
+mem_not_counted_for_evict:0
+mem_replication_backlog:0
+mem_clients_slaves:0
+mem_clients_normal:33972
+mem_aof_buffer:0
+mem_allocator:jemalloc-5.1.0
+active_defrag_running:0
+lazyfree_pending_objects:0
+
+# Persistence
+loading:0
+rdb_changes_since_last_save:3
+rdb_bgsave_in_progress:0
+rdb_last_save_time:1606879301
+rdb_last_bgsave_status:ok
+rdb_last_bgsave_time_sec:1
+rdb_current_bgsave_time_sec:-1
+rdb_last_cow_size:200704
+aof_enabled:0
+aof_rewrite_in_progress:0
+aof_rewrite_scheduled:0
+aof_last_rewrite_time_sec:-1
+aof_current_rewrite_time_sec:-1
+aof_last_bgrewrite_status:ok
+aof_last_write_status:ok
+aof_last_cow_size:0
+module_fork_in_progress:0
+module_fork_last_cow_size:0
+
+# Stats
+total_connections_received:9
+total_commands_processed:107
+instantaneous_ops_per_sec:0
+total_net_input_bytes:3636
+total_net_output_bytes:227343
+instantaneous_input_kbps:0.00
+instantaneous_output_kbps:0.00
+rejected_connections:0
+sync_full:0
+sync_partial_ok:0
+sync_partial_err:0
+expired_keys:0
+expired_stale_perc:0.00
+expired_time_cap_reached_count:0
+expire_cycle_cpu_milliseconds:292
+evicted_keys:0
+keyspace_hits:4
+keyspace_misses:2
+pubsub_channels:0
+pubsub_patterns:0
+latest_fork_usec:164
+migrate_cached_sockets:0
+slave_expires_tracked_keys:0
+active_defrag_hits:0
+active_defrag_misses:0
+active_defrag_key_hits:0
+active_defrag_key_misses:0
+tracking_total_keys:0
+tracking_total_items:0
+tracking_total_prefixes:0
+unexpected_error_replies:0
+
+# Replication
+role:master
+connected_slaves:0
+master_replid:f5f98535613d1293befd8f298280c5f9819a8c97
+master_replid2:0000000000000000000000000000000000000000
+master_repl_offset:0
+second_repl_offset:-1
+repl_backlog_active:0
+repl_backlog_size:1048576
+repl_backlog_first_byte_offset:0
+repl_backlog_histlen:0
+
+# CPU
+used_cpu_sys:15.790574
+used_cpu_user:12.802565
+used_cpu_sys_children:0.005145
+used_cpu_user_children:0.002969
+
+# Modules
+
+# Cluster
+cluster_enabled:0
+
+# Keyspace
+db0:keys=4,expires=0,avg_ttl=0
+db1:keys=1,expires=0,avg_ttl=0
+db2:keys=1,expires=0,avg_ttl=0
+127.0.0.1:6379>
+//////////////////////////////////////////////////////////////////////////////////////
+
+Lab 9: How to restirct maxnoof clients by redis server?
+
+open redis.conf file and edit
+
+################################### CLIENTS ####################################
+
+# Set the max number of connected clients at the same time. By default
+# this limit is set to 10000 clients, however if the Redis server is not
+# able to configure the process file limit to allow for the specified limit
+# the max number of allowed clients is set to the current file limit
+# minus 32 (as Redis reserves a few file descriptors for internal uses).
+#
+# Once the limit is reached Redis will close all the new connections sending
+# an error 'max number of clients reached'.
+#
+# IMPORTANT: When Redis Cluster is used, the max number of connections is also
+# shared with the cluster bus: every node in the cluster will use two
+# connections, one incoming and another outgoing. It is important to size the
+# limit accordingly in case of very large clusters.
+#
+maxclients 3
+
+Client connections:
+
+$cd src/redis-cli -p 6381
+  > set a 10
+  ok
+
+$cd src/redis-cli -p 6381
+  > set a 10
+  ok
+$cd src/redis-cli -p 6381
+  > set a 10
+  ERR MAX NO OF clients reached.
+
+.............................................................................................
+
+Lab 10: What if i want to change configuration while server is running? 
+
+Types of configuration:
+
+1.static configuration
+    configuation is applied during server startup.
+2.dynamic configuration
+    configuration can set after server startup, while running.
+
+static configuration can be loaded
+  -from default server config
+  -from redis.conf file
+
+how to set /and get configuration dynamically?
 
 
+How to use change server configuration during server up?
+
+via command 
+
+config set directive value
+config get directive
+config get * 
+
+config set maxclients 5
+
+config set timeout 1000
+///////////////////////////////////////////////////////////////////////////////////////////
+
+How to get Client specific information?
+
+127.0.0.1:6379> client list
+id=11 addr=127.0.0.1:42592 fd=8 name= age=6684 idle=4496 flags=N db=0 sub=0 psub=0 multi=-1 qbuf=0 qbuf-free=0 obl=0 oll=0 omem=0 events=r cmd=get user=default
+id=12 addr=127.0.0.1:42594 fd=9 name=myclient age=4275 idle=0 flags=N db=0 sub=0 psub=0 multi=-1 qbuf=26 qbuf-free=32742 obl=0 oll=0 omem=0 events=r cmd=client user=default
+127.0.0.1:6379>
+
+How to change client name?
+
+127.0.0.1:6379> client setname myclient
+OK
+127.0.0.1:6379> client getname
+"myclient"
+127.0.0.1:6379>
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+Monitoring Redis Server:
+
+                     Slow Log : Monitoring Slow Redis Calls.
+ 
+       Monitor commands which are blocking longer time than we specified timeout.
 
 
+1.The Redis Slow Log is a "system" to log queries that exceeded a specified
+execution time.
+2.The execution time does not include the I/O operations
+like talking with the client, sending the reply and so forth,
+but just the time needed to actually execute the command (this is the only
+stage of command execution where the thread is blocked and can not serve
+other requests in the meantime).
+
+How long a thread can be blocked?
+
+You can configure the slow log with two parameters:
+  one tells Redis what is the execution time, in microseconds, to exceed in order for the
+command to get logged, and the other parameter is the length of the
+slow log. 
+
+When a new command is logged the oldest one is removed from the queue of logged commands.
+  
+
+The following time is expressed in microseconds, so 1000000 is equivalent
+to one second. Note that a negative number disables the slow log, while
+a value of zero forces the logging of every command.
+
+slowlog-log-slower-than 10000
+
+There is no limit to this length. Just be aware that it will consume memory.
+You can reclaim memory used by the slow log with SLOWLOG RESET.
+slowlog-max-len 128
+
+Lab 11: 
+
+CONFIG SET slowlog-log-slower-than 5000
+CONFIG SET slowlog-max-len 50
+
+debug sleep .5
+
+debug commad is used to enable debugging.
+
+sleep command is used to block current for given amount of time.
+
+127.0.0.1:6379> SLOWLOG GET
+1) 1) (integer) 1
+   2) (integer) 1615980138
+   3) (integer) 100146
+   4) 1) "debug"
+      2) "sleep"
+      3) ".10"
+   5) "127.0.0.1:43156"
+   6) ""
+2) 1) (integer) 0
+   2) (integer) 1615979917
+   3) (integer) 500111
+   4) 1) "debug"
+      2) "sleep"
+      3) ".5"
+   5) "127.0.0.1:43156"
+   6) ""
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+How to monitor memory?
+
+ 1) MEMORY <subcommand> [<arg> [value] [opt] ...]. Subcommands are:
+ 2) DOCTOR
+ 3)     Return memory problems reports.
+ 4) MALLOC-STATS    Return internal statistics report from the memory allocator.
+ 5) PURGE
+ 6)     Attempt to purge dirty pages for reclamation by the allocator.
+ 7) STATS
+ 8)     Return information about the memory usage of the server.
+ 9) USAGE <key> [SAMPLES <count>]
+10)     Return memory in bytes used by <key> and its value. Nested values are
+11)     sampled up to <count> times (default: 5).
+12) HELP
+13)     Prints this help.
+
+127.0.0.1:6379> memory stats
+ 1) "peak.allocated"
+ 2) (integer) 933544
+ 3) "total.allocated"
+ 4) (integer) 872408
+ 5) "startup.allocated"
+ 6) (integer) 809856
+ 7) "replication.backlog"
+ 8) (integer) 0
+ 9) "clients.slaves"
+10) (integer) 0
+11) "clients.normal"
+12) (integer) 20504
+13) "aof.buffer"
+14) (integer) 0
+15) "lua.caches"
+16) (integer) 0
+17) "db.0"
+18) 1) "overhead.hashtable.main"
+    2) (integer) 72
+    3) "overhead.hashtable.expires"
+    4) (integer) 0
+19) "overhead.total"
+20) (integer) 830432
+21) "keys.count"
+22) (integer) 1
+23) "keys.bytes-per-key"
+24) (integer) 62552
+25) "dataset.bytes"
+26) (integer) 41976
+27) "dataset.percentage"
+28) "67.105766296386719"
+29) "peak.percentage"
+30) "93.451194763183594"
+31) "allocator.allocated"
+32) (integer) 1244440
+33) "allocator.active"
+34) (integer) 1536000
+35) "allocator.resident"
+36) (integer) 3772416
+37) "allocator-fragmentation.ratio"
+38) "1.2342901229858398"
+39) "allocator-fragmentation.bytes"
+40) (integer) 291560
+41) "allocator-rss.ratio"
+42) "2.4560000896453857"
+43) "allocator-rss.bytes"
+44) (integer) 2236416
+45) "rss-overhead.ratio"
+46) "1.5092290639877319"
+47) "rss-overhead.bytes"
+48) (integer) 1921024
+49) "fragmentation"
+50) "6.848081111907959"
+51) "fragmentation.bytes"
+52) (integer) 4862048
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+Latency Check:
 
 
+127.0.0.1:6379> CONFIG SET latency-monitor-threshold 100
+OK
+127.0.0.1:6379> debug sleep 1
+OK
+(1.00s)
+127.0.0.1:6379> latency latest
+1) 1) "command"
+   2) (integer) 1606872783
+   3) (integer) 1000
+   4) (integer) 1000
+127.0.0.1:6379> debug sleep .25
+OK
+127.0.0.1:6379> latency latest
+1) 1) "command"
+   2) (integer) 1606872827
+   3) (integer) 250
+   4) (integer) 1000
+127.0.0.1:6379> latency history command
+1) 1) (integer) 1606872783
+   2) (integer) 1000
+2) 1) (integer) 1606872827
+   2) (integer) 250
+127.0.0.1:6379> latency doctor
+Dave, I have observed latency spikes in this Redis instance. You don't mind talking about it, do you Dave?
 
+1. command: 2 latency spikes (average 625ms, mean deviation 375ms, period 56.00 sec). Worst all time event 1000ms.
 
+I have a few advices for you:
 
+- Check your Slow Log to understand what are the commands you are running which are too slow to execute. Please check http://redis.io/commands/slowlog for more information.
+- Deleting, expiring or evicting (because of maxmemory policy) large objects is a blocking operation. If you have very large objects that are often deleted, expired, or evicted, try to fragment those objects into multiple smaller objects.
+127.0.0.1:6379>  latency reset command
+(integer) 1
+127.0.0.1:6379>  debug sleep .1
+OK
+127.0.0.1:6379>  debug sleep .2
+OK
+127.0.0.1:6379>  debug sleep .3
+OK
+127.0.0.1:6379>  debug sleep .5
+OK
+(0.50s)
+127.0.0.1:6379>  debug sleep .4
+OK
+127.0.0.1:6379> latency graph command
+command - high 500 ms, low 100 ms (all time high 500 ms)
+--------------------------------------------------------------------------------
+   #_
+  _||
+ _|||
+_||||
 
+22219
+9523s
+ssss
+127.0.0.1:6379>
+//////////////////////////////////////////////////////////////////////////////////////////////
 
+Todo List:
 
-
-
-
-
-
-
-
+1.Persistancy - snapshoting.
+2.Replication - Master/replicat
+3.High availability - Cluster
+4.How to secure redis.
 
 
 
