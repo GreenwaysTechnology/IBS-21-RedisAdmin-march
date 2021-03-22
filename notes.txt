@@ -1915,7 +1915,7 @@ How to monitor memory?
 
 Latency Check:
 
-
+Lab 12:
 127.0.0.1:6379> CONFIG SET latency-monitor-threshold 100
 OK
 127.0.0.1:6379> debug sleep 1
@@ -1974,14 +1974,284 @@ ssss
 127.0.0.1:6379>
 //////////////////////////////////////////////////////////////////////////////////////////////
 
-Todo List:
+					Persistence
+//////////////////////////////////////////////////////////////////////////////////////////////
 
-1.Persistancy - snapshoting.
-2.Replication - Master/replicat
-3.High availability - Cluster
-4.How to secure redis.
+What is persistency?
+
+ Redis is in memory data store.
+ Once Redis server instance is restarted/shutdown/crashes, all data stored in side redis is   gone. 
+ In order to save data permantely, we need to store data in disk.
+
+Why persistency?
+ Only for back up and recovery
+
+How Redis takes back up?
+
+ Redis may store datasets into file called "rdb /aof" file.
+
+Redis persistency decisions:
+............................
+
+1.rdb - redis database 
+2.aof  -append only file
+3.no persistency - disabling persistance.
+4. rdb + aof
 
 
+RDB:
+1.A .rdb file is a binary that has a point in time representing the data stored in a Redis instance. 
+ "Point in time" means a particular moment. persistence not instant based.
+
+ eg 
+  if i write "x" data into redis, it may not persent the same inside rdb file.
+
+2.The RDB file format is optimized for fast reads and writes 
+
+3.To achieve the necessary performance, the internal representation of a .rdb file on a disk is very similar to Redis's in-memory representation. 
+
+3.Another interesting aspect of RDB is that it can use LZF compression to make an RDB file very compact. 
+
+4.LZF compression is a fast compression algorithm that has a very small memory requirement during compression 
+
+5.Although it does not have the best compression rates compared to other compression algorithms, it works efficiently with Redis. Also, a single RDB file is sufficient to restore a Redis instance completely. 
+
+
+6.When we can take back up?
+ RDB is great for backups and disaster recovery because it allows you to save an RDB file every hour, day, week, or month, depending on your needs. This approach allows you to easily use RDB files to restore any dataset at any given time. 
+
+7.How to start taking back up?
+
+ -via commands
+ -via configuration.
+
+Commands:
+1.Save
+2.bgsave
+
+The command SAVE creates an RDB immediately, but it should be avoided because it blocks the Redis server during snapshot(Exact copy) creation. 
+
+The command BGSAVE (background save) should be used instead; it has the same effect as SAVE, but it runs in a child process so as not to block Redis. 
+
+8.In order to avoid performance degradation during a background save, the redis-server process creates a child process (fork) to perform all the persistence operations. 
+
+9.So, the main process will never perform any disk I/O operations. 
+During this process, if the main redis-server is receiving writes, the child process will need to copy the memory pages that were changed, and this may increase the total used memory significantly (it uses copy-on-write). 
+
+Snapshot Rules:
+...............
+
+The default Redis configuration file has enabled three snapshot rules to cause the data to persist on the disk through the directive save, which performs background saves This technique is called snapshotting . 
+“redis.conf” file having the below configuration
+save 900 1 
+save 300 10 
+save 60 10000 
+
+Redis creates snapshots based on two conditions:
+ if in X seconds, Y amount of write operations have happened in your Redis instance, it will create a .rdb file. 
+The RDB filename is based on the directive dbfilename (this defaults to dump.rdb) .
+save number_of_seconds number_of_changes 
+With this in mind, we can infer what those three lines will do: 
+Save a .rdb file on disk every 900 seconds (15 minutes) if at least one write operation happens. 
+Save a .rdb file on disk every 300 seconds (5 minutes) if at least 10 write operations happen. 
+Save a .rdb file on disk every 60 seconds (1 minute) if at least 10,000 write operations happen. 
+
+
+Lab 13:
+
+Change redis.conf file and check 
+Save and bgsave commands and check the status
+
+Not recommended to use save directives less than 30 seconds 
+
+
+How to disable snapshot
+
+Snapshotting can be disabled, which means that nothing will be saved on the disk. 
+This is done by deleting or commenting all save directives in the redis.conf file and then restarting the Redis server.
+ It can also be disabled via a command-line option or the command CONFIG SET 
+
+Snapshot additional directives:
+stop-writes-on-bgsave-error: The possible values for this are yes or no. This option makes Redis stop accepting writes if the last background save has failed. Redis starts accepting writes again after a background save succeeds. The default value is yes 
+
+rdbcompression: The possible values for this are yes or no. When this option is set to yes, Redis uses LZF compression for the .rdb files. The default value is yes 
+
+rdbchecksum: The possible values for this are yes or no. When it is set to yes, Redis saves a checksum at the end of the .rdb file and performs a checksum before loading the .rdb file. Redis does not start if the RDB checksum does not match with the one in the file. The default value is yes 
+
+dbfilename: This option sets the .rdb filename. The default value is dump.rdb 
+save: This option configures the snapshot frequency, based on the number of seconds and changes. It can be specified multiple times. The default values are save 3600 1, save 300 100, and save 60 10000 
+
+dir: This specifies the directory location of the AOF and RDB files 
+
+
+AOF (Append-only File):
+
+1.The AOF persistence logs every write operation received by the server, that will be played again at server startup, reconstructing the original dataset. 
+   set a 10 ------------------file.aof ----set a 10
+ Rdb stores data in binary format.
+
+2.Commands are logged using the same format as the Redis protocol itself, in an append-only fashion.
+ Redis is able to rewrite the log in the background when it gets too big.
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+As of now we have discussed single server instance only. Redis has been designed to support 
+"Scalability and High Availability"
+.............................................................................................
+                                   Scalability : Replication
+.............................................................................................
+
+What is replication?
+   Replication means that while you write to a Redis instance (usually referred to as the
+master), it will ensure that one or more instances (usually referred to as the slaves)
+become exact copies of the master.
+
+One Leader(Master) many followers(slaves/replicas)
+
+Replication is another form of persistency. Persistency will avoid data loss.
+
+Types of Persistency:
+1.Disk based persistency -  rdb /aof
+2.Disk less persistency -  in memoery persistency.
+
+Roles of redis instance
+
+1.master
+   receives write operation, replicates to another instances called replica
+   master can do both read and write
+   a single master must have 2 replica min
+   replication is async and non blocking process
+
+2.replica
+   it is redis instance , replicates data of master
+   it is read only.
+   one replica can become master to another replica
+
+Communication pattern between master and replica:
+
+ master and replica connected , the master  keeps the replicated updated
+ by sending a stream of commands to replica(ping).
+  it replicates  effects on the dataset happening in the master side due to
+ client writes, keys expired or evicted, any other action changing the master dataset.
+
+Synchronization:
+  Connecting master and replica and starts sending data(stream of commands).
+
+ when the link between master and the replica breaks, due to network issues, or timeout sensed in the master or the replica.
+
+Use case:
+
+  client sends 3 commands to the master------ master has replicated only 2 commands whil   replicating 1 command network is gone.what will happen to that 1 commands.
+
+Types of Replication:
+....................
+
+1.Full Sync
+    1.tries to transfer full data  to replica
+    2.dump not saved on master in diskless mode
+When:
+    bootrap new a new replica
+    Existing replica too far behind to do partial sync.
+
+2.Partial sync
+    every write operation in master
+    it wont replicate old data.
+
+client sends 3 commands to the master------ master has replicated only 2 commands whil   replicating 1 command network is gone.what will happen to that 1 commands.
+
+ Will it go full sync or partil sync?
+   By default it will do partil resync, if paritial is not available,if full sync..
+
+While full resync, master internally takes snapshot, then after that it will send commands.
+////////////////////////////////////////////////////////////////////////////////////////////
+
+Big Picture on Data storage inside redis-master instance/slave Instance:(Memory layout)
+.......................................................................................
+
+There are 3 memory layout inside redis instance:
+
+1.Backlog Circular buffer
+2.Key-Value Store
+3.Replica Client Output Buffer /OUtput buffer
+
+In Enterprise, you can have many masters, each master can have more replication.
+
+Each master identified by "replication id" : it long random pseudo string.
+
+
+How to write replication ?
+
+1.via redis config
+2.via command line
+3.via config command
+
+Lab 13:
+ How to setup 1 master 2 replicas.
+
+Master:
+
+$ redis-server --port 5555
+  On the second terminal, start the first slave on port 6666:
+
+
+Replicas:
+Steps:
+The following example starts three Redis instances: one master and two replicas.
+
+On the first terminal, start the master redis-server on port 5555:
+
+$ redis-server --port 5555
+  On the second terminal, start the first slave on port 6666:
+
+$ redis-server --port 6666 --slaveof 127.0.0.1 5555
+
+On the third terminal, start the second slave on port 7777:
+$ redis-server --port 7777 --slaveof 127.0.0.1 5555
+At this point, there is a master with two replicas running.
+
+On the fourth terminal, check whether the replication is working:
+$ redis-cli -p 5555 SET testkey testvalue
+OK
+$ redis-cli -p 6666 GET testkey
+"testvalue"
+$ redis-cli -p 7777 GET testkey
+"testvalue"
+//////////////////////////////////////////////////////////////////////////////////////////////
+                                  High Availability
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+1.Partion - Sharding
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
 
 
 
