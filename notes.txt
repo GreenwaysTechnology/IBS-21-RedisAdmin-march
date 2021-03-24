@@ -2411,56 +2411,53 @@ cluster-slave-validity-factor 10
 cluster-migration-barrier 1
 cluster-require-full-coverage yes
 
-src/redis-server --port 5000 --cluster-enabled yes --cluster-config-file
-nodes-5000.conf --cluster-node-timeout 2000 --cluster-slave-validityfactor
-10 --cluster-migration-barrier 1 --cluster-require-full-coverage
-yes --dbfilename dump-5000.rdb --daemonize no
+src/redis-server --port 5000 --cluster-enabled yes --cluster-config-file \ 
+nodes-5000.conf --cluster-node-timeout 2000 --cluster-slave-validity-factor \
+10 --cluster-migration-barrier 1 --cluster-require-full-coverage \
+yes --dbfilename dump-5000.rdb --daemonize yes \
 
-src/redis-server --port 5001 --cluster-enabled yes --cluster-config-file
-nodes-5001.conf --cluster-node-timeout 2000 --cluster-slave-validityfactor
-10 --cluster-migration-barrier 1 --cluster-require-full-coverage
-yes --dbfilename dump-5001.rdb --daemonize no
-
-
-src/redis-server --port 5002 --cluster-enabled yes --cluster-config-file
-nodes-5002.conf --cluster-node-timeout 2000 --cluster-slave-validityfactor
-10 --cluster-migration-barrier 1 --cluster-require-full-coverage
-yes --dbfilename dump-5002.rdb --daemonize no
+src/redis-server --port 5001 --cluster-enabled yes --cluster-config-file \
+nodes-5001.conf --cluster-node-timeout 2000 --cluster-slave-validity-factor \
+10 --cluster-migration-barrier 1 --cluster-require-full-coverage \
+yes --dbfilename dump-5001.rdb --daemonize yes
 
 
-cluster-node-timeout (this value
-is in milliseconds). 
+src/redis-server --port 5002 --cluster-enabled yes --cluster-config-file \
+nodes-5002.conf --cluster-node-timeout 2000 --cluster-slave-validity-factor \
+10 --cluster-migration-barrier 1 --cluster-require-full-coverage \
+yes --dbfilename dump-5002.rdb --daemonize yes
+
+
+cluster-node-timeout (this value is in milliseconds). 
+.....................................................
+
  If a node is not reachable for the specified amount of time by the
 majority of master nodes, it will be considered as failing.
-	If that node is a master, a
-failover to one of its slaves will occur. If it is a slave, it will stop accepting queries.
 
-cluster-slave-validityfactor:
+If that node is a master, a failover to one of its slaves will occur. If it is a slave, it will stop accepting queries.
+
+cluster-slave-validity-factor:
 
 -Sometimes, network failures happen, and when they happen, it is always a good
 idea to minimize problems.
 
--If network issues are happening and nodes cannot
-communicate well, it is possible that the majority of nodes think that a given master is
-down and so a failover procedure should start
+-If network issues are happening and nodes cannot communicate well, it is possible that the majority of nodes think that a given master is down and so a failover procedure should start
 
--If the network only had a hiccup, the
-failover procedure might have been unnecessary. There is a configuration directive
-that helps minimize these kinds of problems. 
+-If the network only had a hiccup, the failover procedure might have been unnecessary. 
+There is a configuration directive that helps minimize these kinds of problems. 
 
--The directive is cluster-slave-validityfactor, and it expects a factor. By default, the factor is 10.
+-The directive is cluster-slave-validity-factor, and it expects a factor. By default, the factor is 10.
+
 If there is a network issue and a master node cannot communicate well with other nodes for a certain amount of time (cluster-node-timeout multiplied by cluster-slave-validity-factor),
 no slaves will be promoted to replace that master.
-When the connection issues go away and the
-master node is able to communicate well with others again, if it becomes unreachable
-a failover will happen.
 
-When the factor is set to zero, no failovers will be prevented. If any network
-connectivity issues occur and the factor is zero, a slave will always perform
-the failover.
+When the connection issues go away and the master node is able to communicate well with others again, if it becomes unreachable a failover will happen.
+
+When the factor is set to zero, no failovers will be prevented. If any network connectivity issues occur and the factor is zero, a slave will always perform the failover.
 
 cluster-migration-barrier:
 ..........................
+
 It is possible to specify the minimum number of slaves that must be connected
 to a master through the directive cluster-migration-barrier, which has a default
 value of 1.
@@ -2475,14 +2472,12 @@ slave, master C has C1 as a slave, and the directive cluster-migration-barrier i
 2. If master C fails and C1 gets promoted to master, master A will keep all of its slaves
 (because the minimum is 2), and master C1 will have zero slaves.
 
-If you never want
-to have masters borrowing slaves from other masters, set this configuration to a high
-number
+If you never want to have masters borrowing slaves from other masters, set this configuration to a high number
 
 In Redis Cluster, all data is sharded among master nodes.
 
-If any master node fails and
-there is no slave to fail over to, a portion of the data will be lost. When this happens,
+If any master node fails and there is no slave to fail over to, a portion of the data will be lost. When this happens,
+
 you have two options:
 • Make the entire cluster unavailable
 • Make the cluster available, but such that all keys that would be routed to that
@@ -2588,6 +2583,8 @@ conflicting information (for example, if two different nodes claimed the same ha
 slots), the largest epoch configuration would have priority.
 
 Next, we are going to make all the nodes aware of each other. We will do this using
+
+
 the command CLUSTER MEET:
 $ redis-cli -c -p 5000 CLUSTER MEET 127.0.0.1 5001
 $ redis-cli -c -p 5000 CLUSTER MEET 127.0.0.1 5002
@@ -2691,20 +2688,294 @@ The first output line is the slave information. It said myself,master previously
 after CLUSTER REPLICATE, it became myself,slave.
 
 src/redis-cli -c -h localhost -p 30001
+////////////////////////////////////////////////////////////////////////////////////////////
+
+Setup Cluster via config files:
+
+Create servers- create that many folders
+
+ server-5000 server-5001 server-5002 server-5003...
+
+  
+each folder can have redis distribution 
+where you can have redis.conf
+
+port 5000
+cluster-enabled yes
+cluster-config-file 500-nodes.conf
+cluster-node-timeout 5000
+appendonly yes
+
+src/redis-server redis.conf
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+via server start:
+
+3 master 3 slaves = 6 nodes
+
+src/redis-server --port 5000 --cluster-enabled yes --cluster-config-file \ 
+nodes-5000.conf --cluster-node-timeout 2000 --cluster-slave-validity-factor \
+10 --cluster-migration-barrier 1 --cluster-require-full-coverage \
+yes --dbfilename dump-5000.rdb --daemonize yes \
+
+src/redis-server --port 5001 --cluster-enabled yes --cluster-config-file \
+nodes-5001.conf --cluster-node-timeout 2000 --cluster-slave-validity-factor \
+10 --cluster-migration-barrier 1 --cluster-require-full-coverage \
+yes --dbfilename dump-5001.rdb --daemonize yes
+
+
+src/redis-server --port 5002 --cluster-enabled yes --cluster-config-file \
+nodes-5002.conf --cluster-node-timeout 2000 --cluster-slave-validity-factor \
+10 --cluster-migration-barrier 1 --cluster-require-full-coverage \
+yes --dbfilename dump-5002.rdb --daemonize yes
+
+...create other 3 nodes with different portno
+
+Incase it is manual setp
+
+1.HASH slot allocation
+2.cluster meet step
+3.replication
+
+Redis 5 on wards this has been simplified via redis cli
+
+
+src/redis-cli --cluster create 127.0.0.1:7000 127.0.0.1:7001 \
+127.0.0.1:7002 127.0.0.1:7003 127.0.0.1:7004 127.0.0.1:7005 \
+--cluster-replicas 1
+
+This command will setup hash slot allocation, cluster meet config,replication config.
+////////////////////////////////////////////////////////////////////////////////////////////
+
+Redis provides an utility:
+-ruby utility
+-sh utility.
+
+Create-Cluster utiltity command to setup cluster.
+/////////////////////////////////////////////////////////////////////////////////////////////
+                                  Security
+////////////////////////////////////////////////////////////////////////////////////////////
+
+Redis General Security Architecture:
+...................................
+1.Redis has been designed to be accessed by trusted clients inside trusted envs.
+  - It is not good idea to expose the redis instance directly to the internet or to an env
+    Where untrusted clients can directly access the Redis TCP PORT or Unix socket.
+ 
+In general web applications will talk to redis for storing data, there is high possiblity
+via application hacker may enter into redis.
+
+How to stop that?
+ Redis recommands to implement ACL- ACCESS CONTROL List , through which you can validate
+user, what operation he can perform against redis instance.
+
+Network Security:
+................
+
+bind:
+
+# ~~~ WARNING ~~~ If the computer running Redis is directly exposed to the
+# internet, binding to all the interfaces is dangerous and will expose the
+# instance to everybody on the internet. So by default we uncomment the
+# following bind directive, that will force Redis to listen only on the
+# IPv4 loopback interface address (this means Redis will only be able to
+# accept client connections from the same host that it is running on).
+
+# bind 192.168.1.100 10.0.0.1
+# bind 127.0.0.1 ::1
+
+Protected Mode:
+ if redis instance is exposed outside , accessed from external network.
+
+
+ # When protected mode is on and if:
+#
+# 1) The server is not binding explicitly to a set of addresses using the
+#    "bind" directive.
+# 2) No password is configured.
+#
+# The server only accepts connections from clients connecting from the
+# IPv4 and IPv6 loopback addresses 127.0.0.1 and ::1, and from Unix domain
+# sockets.
+#
+# By default protected mode is enabled. You should disable it only if
+# you are sure you want clients from other hosts to connect to Redis
+# even if no authentication is configured, nor a specific set of interfaces
+# are explicitly listed using the "bind" directive.
+protected-mode yes
+//////////////////////////////////////////////////////////////////////////////////////
+
+How to disable danagerous commands
+like flush db, flushall, config
+
+redis.conf
+
+rename-command commandName newCommand
+
+rename-command  flushdb   b888adfdsafdsafkk8888
+
+127.0.0.1:6379> flushdb
+(error) ERR unknown command `flushdb`, with args beginning with:
+127.0.0.1:6379>
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
+User Passwords: Authentication: ACL Framework:
+..............................................
+
+What is redis acl? 
+ Access Control List, is the feature that allows certain connections to be limited in the
+terms of commands that can be executed and keys that can be accessed.
+
+The redis is configured with "default" user without any password.
+
+In old redis versions the passed is configured using a directive called "requirepass".
+
+Lab:
+
+open redis.conf file
+
+requirepass foo
+
+try to connect redis cli with out pass
+
+src/redis-cli
+ubuntu@ip-172-31-16-143:~/myredislab/redis-6.2.1$ src/redis-cli
+127.0.0.1:6379> ping
+(error) NOAUTH Authentication required.
+
+how to connect with password?
+ubuntu@ip-172-31-16-143:~/myredislab/redis-6.2.1$ src/redis-cli -a foo
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+127.0.0.1:6379> ping
+PONG
+///////////////////////////////////////////////////////////////////////////////////////// 
+
+Auth Command:
+..............
+
+AUTH username password
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+ACL Commands
+
+- acl users
+   The command shows a list of all the usernames of the currently configured users in the Redis ACL system.
+
+How to add new user with rules?
+
+-ACL SETUSER username [rule [rule ...]]
+
+ACL List
+127.0.0.1:6379> acl list
+1) "user default on nopass ~* +@all"
+127.0.0.1:6379>
+
+Add simple user:
+127.0.0.1:6379> acl setuser alice
+OK
+127.0.0.1:6379> acl list
+1) "user alice off -@all"
+2) "user default on nopass ~* +@all"
+127.0.0.1:6379>
+
+The just created user "alice" is:
+
+In off status, that is, it's disabled. AUTH will not work.
+The user also has no passwords set.
+Cannot access any command. Note that the user is created by default without the ability to access any command, so the -@all in the output above could be omitted, however ACL LIST attempts to be explicit rather than implicit.
+There are no key patterns that the user can access.
+The user can access all Pub/Sub channels.
+
+127.0.0.1:6379> ACL SETUSER alice on >mypass ~cached:* +get
+OK
+1
+> AUTH alice p1pp0
+OK
+> GET foo
+(error) NOPERM this user has no permissions to access one of the keys used as arguments
+> GET cached:1234
+(nil)
+> SET cached:1234 zap
+(error) NOPERM this user has no permissions to run the 'set' command or its subcommand
+///////////////////////////////
+
+127.0.0.1:6379> ACL WHOAMI
+"default"
+1
+
+for rules : refere redis.conf file.
+/////////////////////////////////////////////////////////////////////////////////////////////
+                                 Upgrading a Server
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+UpGrading:
+
+At some point in the life of your system you might need to upgrade Redis. Unfortunately,
+Redis can’t do online binary upgrades, and doing a server restart means that
+your application won’t be able to talk to Redis for a (possibly long) period of time. But
+that doesn’t mean that there aren’t other ways to achieve it without incurring downtime.
+You might also want to move your current Redis database to another system for
+maintenance purposes, a hardware upgrade, etc.
+
+Solution:
+
+Our solution will involve starting a new Redis server in slave mode, switching over the
+clients to the slave and promoting the new server to the master role. To make the
+example easier to understand, let’s assume we have a Redis server listening on port
+6379.
+
+Steps:
+
+1. Install the new Redis version without restarting your existing server.
+
+2. Create a new redis.conf, specifying that Redis runs on port 6380 (assuming you’re
+on the same system—if you’re not, you can still use 6379 or any other available
+port) and a different DB directory (you don’t want to have 2 Redis servers reading
+or writing the same files).
+
+3. Start the new server.
+
+4. Connect to the new server and issue the command:
+ 
+  SLAVEOF localhost 6379
+
+This will trigger a BGSAVE on the master server, and upon completion the new (slave)
+server will start replicating. You can check the current status using the INFO command
+on the slave. When you see master_link_status:up, the replication is active.
+
+5. Since your new Redis server is now up-to-date, you can start moving over your
+clients to this new server. You can verify the number of clients connected to a server
+with the INFO command; check the connected_clients variable.
+
+6. When all your clients are connected to the slave server, you still have two tasks to
+complete: disable the replication and shut down the master server
 
 
 
+1. Connect to the slave server and issue:
 
+SLAVEOF NO ONE
 
+This will stop replication and effectively promote your slave into a master. This is
+important in Redis 2.2. as master servers are responsible for sending expirations
+to their slaves.
 
+2. Now connect to your old master server and issue:
 
+SHUTDOWN
+The old master server will perform a SAVE and shutdown.
 
+3. Your new Redis system is up and running, but make sure that all your configuration
+files, init scripts, backups, etc. are pointing to the right location and starting the
+correct server. It’s easy to forget those routine operations, but you should at the
+very least certify that nothing wrong will happen in case of a server restart.
+///////////////////////////////////////////////////////////////////////////////////////////
 
-
-
-
-
-
+Redis Basic setup guidelines:
+............................
 
 
 
